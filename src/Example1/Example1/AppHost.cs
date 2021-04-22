@@ -1,6 +1,8 @@
+using System;
 using Funq;
 using ServiceStack;
 using Example1.ServiceInterface;
+using MassTransit;
 
 namespace Example1
 {
@@ -19,9 +21,19 @@ namespace Example1
         /// </summary>
         public override void Configure(Container container)
         {
-            //Config examples
-            //this.Plugins.Add(new PostmanFeature());
-            //this.Plugins.Add(new CorsFeature());
+            container.Register(c => Bus.Factory.CreateUsingRabbitMq(cfg =>
+            {
+                cfg.Host("localhost", "/", h =>
+                {
+                    h.Username("guest");
+                    h.Password("guest");
+                });
+            }));
+            
+            container.Register<IPublishEndpoint>(c => c.Resolve<IBusControl>());
+            
+            var busControl = container.Resolve<IBusControl>();
+            busControl.Start(TimeSpan.FromSeconds(5));
         }
     }
 }
